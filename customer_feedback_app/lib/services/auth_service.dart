@@ -1,0 +1,74 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/constants.dart';
+import '../models/user.dart';
+
+class AuthService {
+  // ✅ Login Method
+  Future<UserModel?> login(String email, String password) async {
+    final url = Uri.parse('${AppConstants.apiBaseUrl}/auth/login');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final String responseBody = response.body.trim();
+
+        if (responseBody.isEmpty) {
+          print("Error: Empty response from API");
+          return null;
+        }
+
+        final Map<String, dynamic> data = jsonDecode(responseBody);
+
+        if (!data.containsKey("token")) {
+          print("Error: API response does not contain token");
+          return null;
+        }
+
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString(AppConstants.authTokenKey, data["token"]);
+
+        return UserModel.fromJson(data["user"]);
+      } else {
+        print("Login Failed: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Login Error: $e");
+      return null;
+    }
+  }
+
+  // ✅ Register Method
+  Future<bool> register(String name, String email, String password) async {
+    final url = Uri.parse('${AppConstants.apiBaseUrl}/auth/register');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      print("Registration Error: $e");
+      return false;
+    }
+  }
+
+  // ✅ Logout Method
+  Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.authTokenKey);
+  }
+}

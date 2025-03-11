@@ -1,0 +1,42 @@
+import 'package:customer_feedback_app/screens/auth/register_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/feedback_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/home/home_screen.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthProvider()..checkAuthStatus()),
+        ChangeNotifierProvider(create: (context) => FeedbackProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return MaterialApp(
+          title: 'Customer Feedback App',
+          theme: ThemeData(primarySwatch: Colors.blue),
+          debugShowCheckedModeBanner: false,
+          home: authProvider.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+          routes: {
+            '/home': (context) => const HomeScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(), // ✅ Add this line
+          },
+        );
+      },
+    );
+  }
+}
